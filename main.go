@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/ArtusC/cambioDolar/server"
+	server "github.com/ArtusC/cambioDolar/Server"
 )
 
 func main() {
