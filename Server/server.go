@@ -12,7 +12,7 @@ import (
 	"time"
 
 	client "github.com/ArtusC/cambioDolar/Client"
-	_ "github.com/go-sql-driver/mysql"
+	// _ "github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -40,13 +40,13 @@ func ServerHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*200)
 	defer cancel()
 
-	log.Println("[Mysql] Starting server")
-	db, err := sql.Open("mysql", "root:root@tcp(localhost:3306)/cambio_dolar")
-	if err != nil {
-		panic(err)
-	}
-	log.Println("[Mysql] Server started with success!")
-	defer db.Close()
+	// log.Println("[Mysql] Starting server")
+	// db, err := sql.Open("mysql", "root:root@tcp(localhost:3306)/cambio_dolar")
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// log.Println("[Mysql] Server started with success!")
+	// defer db.Close()
 
 	log.Println("[SqLite] Starting server")
 	dbSqlite, err := sql.Open("sqlite3", "cambio_dolar.db")
@@ -92,12 +92,12 @@ func ServerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Println("Record saved with success in sqlite!")
 
-	log.Println("Saving record on mysql DB...")
-	err = insertCotacaoMysql(db, cotacao)
-	if err != nil {
-		panic(fmt.Sprintf("error to insert the record on DB, error: %s", err.Error()))
-	}
-	log.Println("Record saved with success in mysql!")
+	// log.Println("Saving record on mysql DB...")
+	// err = insertCotacaoMysql(db, cotacao)
+	// if err != nil {
+	// 	panic(fmt.Sprintf("error to insert the record on DB, error: %s", err.Error()))
+	// }
+	// log.Println("Record saved with success in mysql!")
 
 	log.Println("Creating txt file...")
 	errClient := client.ClientHandler(cotacao.Bid)
@@ -175,23 +175,23 @@ func insertCotacaoSqlite(ctx context.Context, db *sql.DB, cotacao *CambioDolarSq
 
 }
 
-func insertCotacaoMysql(db *sql.DB, cotacao *CambioDolarSqlStruct) error {
-	log.Printf("[Mysql] Inserting record in table cotacoes with values: %s, %s, %s, %s, %s\n", cotacao.ID, cotacao.Codein, cotacao.Code, cotacao.Name, cotacao.Bid)
-	stmt, err := db.Prepare("insert into cotacoes(id, code, codein, name, bid) values(?, ?, ?, ?, ?)")
-	if err != nil {
-		log.Printf("[Mysql] Error to prepare statement to insert record, error: %s\n", err)
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(cotacao.ID, cotacao.Codein, cotacao.Code, cotacao.Name, cotacao.Bid)
-	if err != nil {
-		log.Printf("[Mysql] Error to insert record in the server, error: %s\n", err)
-		return err
-	}
+// func insertCotacaoMysql(db *sql.DB, cotacao *CambioDolarSqlStruct) error {
+// 	log.Printf("[Mysql] Inserting record in table cotacoes with values: %s, %s, %s, %s, %s\n", cotacao.ID, cotacao.Codein, cotacao.Code, cotacao.Name, cotacao.Bid)
+// 	stmt, err := db.Prepare("insert into cotacoes(id, code, codein, name, bid) values(?, ?, ?, ?, ?)")
+// 	if err != nil {
+// 		log.Printf("[Mysql] Error to prepare statement to insert record, error: %s\n", err)
+// 		return err
+// 	}
+// 	defer stmt.Close()
+// 	_, err = stmt.Exec(cotacao.ID, cotacao.Codein, cotacao.Code, cotacao.Name, cotacao.Bid)
+// 	if err != nil {
+// 		log.Printf("[Mysql] Error to insert record in the server, error: %s\n", err)
+// 		return err
+// 	}
 
-	return nil
+// 	return nil
 
-}
+// }
 
 func NewCotacaoDolar(code, codein, name, bid string) *CambioDolarSqlStruct {
 	return &CambioDolarSqlStruct{
