@@ -14,13 +14,3 @@ services:
       MYSQL_DATABASE: cambio_dolar
     ports:
       - 3306:3306
-
-
-  sqlite:
-    build: .
-    image: sqlitedb
-    ports:
-      - 3307:3307
-
-
-  
