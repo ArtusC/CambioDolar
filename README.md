@@ -43,17 +43,14 @@ Ao finalizar, envie o link do repositório para correção.
 
 2) Via terminal, access the cloned repository folder;
 
-3) Run this command to build the image: 
-  * ``` docker-compose build ```
-
-4) Run this command to load the DB:
+3) Run this command to load the MySql image DB:
   * ``` docker-compose up -d ```
 
-5) Run this command to start the API:
+4) Run this command to start the API:
   * ``` go run main.go ```
-  * **DETAIL**: if everything happens well, a file named `cambio_dolar.db` from SqLite apears in the cuurent folder.
+  * **DETAIL**: if everything happens well, a file named `cambio_dolar.db` from SqLite apears in the curent folder.
 
-6) Access this link through the browser  to see the result:
+5) Access this link through the browser  to see the result:
   * ``` localhost:8080/cotacao ```
   * **DETAIL**: if the API return a log with `context deadline exceeded`, reload the browser page.
 
@@ -64,8 +61,10 @@ Ao finalizar, envie o link do repositório para correção.
 
 After accessing the localhost link, the result of the API will apear in the browser screen.
 
-A txt file called `cotacao.txt` will be created in the folder containing the dollar quotation value in reais at the time you make the request.
-
+* Two files will be created in the main project folder if all goes well:
+  * A txt file called `cotacao.txt`, containing the dollar quotation value in reais at the time you make the request.
+  * A db file called `cambio_dolar.db`, containing the Sqlite database records.
+  
 ### Mysql DB:
 If you want to see the result in this database, run the these commands in another terminal:
 
@@ -86,10 +85,11 @@ If you want to see the result in this database, run the these commands in anothe
   * ``` select * from cotacoes; ```
 
 
-  ### SqLite DB:
-If you want to see the result in this database, run the these commands in another terminal:
+### SqLite DB:
+If you want to see the result in Sqlite database, run the these commands in another terminal:
 
-1) ``` docker run --rm -it -v `pwd`:/db sqlitedb ```
+1) You need to have the `sqlite3` installed to run this command:
+  * ``` sqlite3 ```
 
 2) Check if the table `cotacoes` was successfully created running the following command:
   * ``` .tables ```
