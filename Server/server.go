@@ -12,7 +12,6 @@ import (
 	"time"
 
 	client "github.com/ArtusC/cambioDolar/Client"
-	// _ "github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -37,9 +36,6 @@ const (
 
 func ServerHandler(w http.ResponseWriter, r *http.Request) {
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*200)
-	defer cancel()
-
 	log.Println("[SqLite] Starting server")
 	dbSqlite, err := sql.Open("sqlite3", "cambio_dolar.db")
 	if err != nil {
@@ -60,7 +56,7 @@ func ServerHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(msgStart))
 
 	log.Println("Request processed with success!")
-	result, err = getResult(ctx)
+	result, err = getResult()
 	if err != nil {
 		fmt.Printf("Error to get result: %v\n", err)
 		return
@@ -78,9 +74,9 @@ func ServerHandler(w http.ResponseWriter, r *http.Request) {
 	cotacao := NewCotacaoDolar(result.USDBRL.Code, result.USDBRL.Codein, result.USDBRL.Name, result.USDBRL.Bid)
 
 	log.Println("Saving record on sqlite DB...")
-	err = insertCotacaoSqlite(ctx, dbSqlite, cotacao)
+	err = insertCotacaoSqlite(dbSqlite, cotacao)
 	if err != nil {
-		panic(fmt.Sprintf("error to insert the record on DB, error: %s", err.Error()))
+		return
 	}
 	log.Println("Record saved with success in sqlite!")
 
@@ -97,28 +93,31 @@ func ServerHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func getResult(ctx context.Context) (*CambioDolarStruct, error) {
+func getResult() (*CambioDolarStruct, error) {
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*200)
+	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, "GET", "https://economia.awesomeapi.com.br/json/last/USD-BRL", nil)
 	if err != nil {
-		panic(fmt.Sprintf("error to create the new request %s", err.Error()))
+		panic(fmt.Sprintf("error to create the new request, error: %s", err.Error()))
 	}
 
 	reqRes, err := http.DefaultClient.Do(req)
 	if err != nil {
-		panic(fmt.Sprintf("error to sends the request %s", err.Error()))
+		panic(fmt.Sprintf("error to sends the request, error: %s", err.Error()))
 	}
 	defer reqRes.Body.Close()
 
 	res, err := io.ReadAll(reqRes.Body)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error in read the response: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error in read the response, error: %v\n", err)
 		return nil, err
 	}
 
 	err = json.Unmarshal(res, &result)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error to unmarshal the response: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error to unmarshal the response, error: %v\n", err)
 		return nil, err
 	}
 	fmt.Println("Code: ", result.USDBRL.Code)
@@ -127,33 +126,34 @@ func getResult(ctx context.Context) (*CambioDolarStruct, error) {
 	return result, err
 }
 
-func insertCotacaoSqlite(ctx context.Context, db *sql.DB, cotacao *CambioDolarSqlStruct) error {
+func insertCotacaoSqlite(db *sql.DB, cotacao *CambioDolarSqlStruct) error {
 
-	select {
-	case <-time.After(10 * time.Millisecond):
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
+	defer cancel()
 
-		log.Printf("Creating table cotacoes in sqlite database\n")
-		_, err := db.Exec(cotacoesTable)
-		if err != nil {
-			log.Printf("Error to create cotacoes table in sqlite database, error: %s\n", err)
-			return err
-		}
+	log.Printf("[SqLite] Creating table cotacoes in sqlite database\n")
+	_, err := db.Exec(cotacoesTable)
+	if err != nil {
+		log.Printf("[SqLite] Error to create cotacoes table in sqlite database, error: %s\n", err)
+		return err
+	}
 
-		log.Printf("[SqLite] Inserting record in table cotacoes with values: %s, %s, %s, %s, %s\n", cotacao.ID, cotacao.Codein, cotacao.Code, cotacao.Name, cotacao.Bid)
-		stmt, err := db.Prepare("insert into cotacoes(id, code, codein, name, bid) values(?, ?, ?, ?, ?)")
-		if err != nil {
-			log.Printf("[SqLite] Error to prepare statement to insert record, error: %s\n", err)
-			return err
-		}
-		defer stmt.Close()
-		_, err = stmt.Exec(cotacao.ID, cotacao.Codein, cotacao.Code, cotacao.Name, cotacao.Bid)
-		if err != nil {
-			log.Printf("[SqLite] Error to insert record in the server, error: %s\n", err)
-			return err
-		}
+	log.Printf("[SqLite] Inserting record in table cotacoes with values: %s, %s, %s, %s, %s\n", cotacao.ID, cotacao.Codein, cotacao.Code, cotacao.Name, cotacao.Bid)
+	stmt, err := db.Prepare("insert into cotacoes(id, code, codein, name, bid) values(?, ?, ?, ?, ?)")
+	if err != nil {
+		log.Printf("[SqLite] Error to prepare statement to insert record, error: %s\n", err)
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(cotacao.ID, cotacao.Codein, cotacao.Code, cotacao.Name, cotacao.Bid)
+	if err != nil {
+		log.Printf("[SqLite] Error to insert record in the server, error: %s\n", err)
+		return err
+	}
 
-	case <-ctx.Done():
-		log.Println("[SqLite] Request canceled by client.")
+	if ctx.Err() == context.DeadlineExceeded {
+		log.Printf("[SqLite] Process timed out\n")
+		panic(ctx.Err())
 	}
 
 	return nil

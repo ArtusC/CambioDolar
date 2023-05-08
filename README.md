@@ -45,7 +45,6 @@ Ao finalizar, envie o link do repositório para correção.
 
 3) Run this command to start the API:
   * ``` go run main.go ```
-  * **DETAIL**: if everything happens well, a file named `cambio_dolar.db` from SqLite apears in the cuurent folder.
 
 4) Access this link through the browser  to see the result:
   * ``` localhost:8080/cotacao ```
